@@ -54,6 +54,7 @@ if (isProd) {
   app.use(vite.middlewares);
 }
 
+logger.info('Starting up: initialising database and auth (test-flow)');
 try {
   await db.init();
   await initAuth();
