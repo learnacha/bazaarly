@@ -42,6 +42,10 @@ Client side: `src/api/auth.js` wraps `createAuthClient` (`useSession`, `signIn`,
 - `StoreContext` keeps cart and wishlist (product snapshots) in localStorage via `storage.js`; snapshots can be stale, the server is the authority at submit. Checkout guards `cart.length === 0 && !submitting` and navigates before `clearCart()` so a successful order doesn't bounce to /cart. Effects that fetch on user input use an `off` flag.
 - Routing uses react-router v6 (`src/App.jsx`). Styling is a single global `src/index.css` with CSS variables, no CSS framework. Images are emoji.
 
+## CI
+
+`.github/workflows/ci.yml` runs on PRs and pushes to `main`: `build` (npm ci + vite build), then `e2e`, which creates a throwaway Neon branch from the parent database, starts the built app on :3100 against it, runs `npm run smoke` and `npm run e2e`, uploads `e2e-results/` as the `playwright-report` artifact and deletes the branch (it also expires after 3 hours). Repo secrets: `NEON_API_KEY`, `NEON_PROJECT_ID`, `BETTER_AUTH_SECRET`. Optional repo variables: `NEON_PARENT_BRANCH` (default: the project's default branch), `NEON_DB_NAME` (`neondb`), `NEON_DB_ROLE` (`neondb_owner`). Pull requests from forks get no secrets, so e2e fails there.
+
 ## Local environment notes
 
 - Port 3000 may be held by another project (a Docker container did here); run with `PORT=3100 npm run dev` and `BASE_URL=http://localhost:3100 npm run smoke`. Only kill processes you started.
