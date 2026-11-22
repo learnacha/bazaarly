@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
 
-# A newer push to the same PR/branch cancels the older run (and its Neon branch is still deleted below).
+# A newer push to the same PR/branch cancels the older run.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -28,6 +28,10 @@ jobs:
 
   e2e:
     needs: build
+    # One shared test database: run e2e jobs one at a time so parallel PRs don't race on stock.
+    concurrency:
+      group: e2e-test-database
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -35,6 +39,7 @@ jobs:
       BASE_URL: http://localhost:3100
       BETTER_AUTH_URL: http://localhost:3100
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      # A dedicated test database (a Neon branch named ci), never the dev one.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,31 +48,11 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # A throwaway copy of the parent database, deleted at the end. The tests write real rows
-      # (accounts, orders, stock changes); none of it touches the parent.
-      - name: Branch expiry time
-        id: expiry
-        run: echo "at=$(date -u -d '+3 hours' +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-
-      - name: Create Neon branch
-        id: neon
-        uses: neondatabase/create-branch-action@v6
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-          # Empty = the project's default branch. Set repo variable NEON_PARENT_BRANCH to a stable branch (e.g. ci-base).
-          parent_branch: ${{ vars.NEON_PARENT_BRANCH }}
-          branch_name: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          database: ${{ vars.NEON_DB_NAME || 'neondb' }}
-          role: ${{ vars.NEON_DB_ROLE || 'neondb_owner' }}
-          # Safety net: Neon removes the branch itself if the run is killed before the delete step.
-          expires_at: ${{ steps.expiry.outputs.at }}
-
       - run: npm run build
 
       - name: Start the app
         env:
-          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
         run: |
           node server/index.js --prod > server.log 2>&1 &
           for i in $(seq 1 60); do
@@ -112,11 +97,3 @@ jobs:
         with:
           name: server-log
           path: server.log
-
-      - name: Delete Neon branch
-        if: always() && steps.neon.outputs.branch_id != ''
-        uses: neondatabase/delete-branch-action@v3
-        with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-          branch: ${{ steps.neon.outputs.branch_id }}

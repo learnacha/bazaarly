@@ -44,7 +44,7 @@ Client side: `src/api/auth.js` wraps `createAuthClient` (`useSession`, `signIn`,
 
 ## CI
 
-`.github/workflows/ci.yml` runs on PRs and pushes to `main`: `build` (npm ci + vite build), then `e2e`, which creates a throwaway Neon branch from the parent database, starts the built app on :3100 against it, runs `npm run smoke` and `npm run e2e`, uploads `e2e-results/` as the `playwright-report` artifact and deletes the branch (it also expires after 3 hours). Repo secrets: `NEON_API_KEY`, `NEON_PROJECT_ID`, `BETTER_AUTH_SECRET`. Optional repo variables: `NEON_PARENT_BRANCH` (default: the project's default branch), `NEON_DB_NAME` (`neondb`), `NEON_DB_ROLE` (`neondb_owner`). Pull requests from forks get no secrets, so e2e fails there.
+`.github/workflows/ci.yml` runs on PRs and pushes to `main`: `build` (npm ci + vite build), then `e2e`, which starts the built app on :3100 against a dedicated test database, runs `npm run smoke` and `npm run e2e`, and uploads `e2e-results/` as the `playwright-report` artifact. The test database is a fixed Neon branch (`ci`) whose connection string is the repo secret `TEST_DATABASE_URL`; it must never be the dev database. e2e jobs are serialized (one shared database) and the tests clean up after themselves (cancel orders, delete accounts), but smoke leaves cancelled order rows behind. Repo secrets: `TEST_DATABASE_URL`, `BETTER_AUTH_SECRET`. Pull requests from forks get no secrets, so e2e fails there.
 
 ## Local environment notes
 
