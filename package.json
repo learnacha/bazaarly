@@ -7,13 +7,26 @@
     "dev": "node --env-file-if-exists=.env server/dev.js",
     "build": "vite build",
     "start": "node --env-file-if-exists=.env server/index.js --prod",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "triage": "node --env-file=.env triage/server.js",
+    "alerting": "node --env-file=.env triage/alerting.mjs",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed --project=chromium",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report e2e-results/html"
   },
   "engines": {
     "node": ">=22.9"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/api-logs": "^0.223.2",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.223.2",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.223.2",
+    "@opentelemetry/resources": "^2.12.1",
+    "@opentelemetry/sdk-logs": "^0.223.2",
+    "@opentelemetry/sdk-metrics": "^2.12.1",
     "better-auth": "^1.7.13",
     "express": "^5.3.0",
     "react": "^18.3.1",
@@ -21,6 +34,7 @@
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.11"
   }

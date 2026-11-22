@@ -9,9 +9,11 @@ npm run dev      # dev server on http://localhost:3000 (API + Vite with HMR, one
 npm run build    # build the frontend into dist/
 npm start        # production: serves the API and dist/ on PORT (default 3000)
 npm run smoke    # end-to-end API checks against a RUNNING server (BASE_URL to target a deployment)
+npm run e2e      # Playwright UI tests (starts the app on :3100 itself; BASE_URL=... to target a deployment)
+npm run e2e:report  # open the HTML report (e2e-results/html; also junit.xml and results.json there)
 ```
 
-There is no unit-test suite, linter or formatter. Verify changes with `npm run build`, `npm run smoke`, and curl against a running server.
+`e2e/` holds the Playwright suite (fixture `user` signs up a throwaway account via the UI and cancels its orders and deletes it afterwards; tests tagged `@smoke` also run on a mobile viewport). There is no unit-test suite, linter or formatter. Verify changes with `npm run build`, `npm run smoke`, and curl against a running server.
 
 Requires Node >= 22.9 (uses `--env-file-if-exists` and the global `WebSocket` that Neon's Pool needs). `DATABASE_URL` (a Neon Postgres connection string) must be set in `.env` or the environment, otherwise the server exits on startup. See `.env.example`.
 

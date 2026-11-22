@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.git
+.azure-app-name
+node_modules
+dist
+observability
+scripts
+*.log

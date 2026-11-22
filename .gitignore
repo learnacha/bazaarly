@@ -7,3 +7,10 @@ dist
 # Connection strings and keys belong only in .env, but keep stray copies out of git too.
 *connectionstring*
 *secret*
+.azure-aca-state
+triage/reports/
+
+# Playwright
+e2e-results/
+playwright-report/
+test-results/

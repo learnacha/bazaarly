@@ -2,6 +2,8 @@ import express from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from './auth.js';
 import * as db from './db.js';
+import { ordersCancelled, ordersCreated, ordersRevenue } from './telemetry.js';
+import { logger, errAttrs } from './logger.js';
 import { HttpError } from './errors.js';
 import { MAX_LINES, MAX_QTY_PER_LINE } from '../shared/config.js';
 import { PAYMENT_METHODS, SHIPPING_FIELDS, validateShipping } from '../shared/validation.js';
@@ -71,11 +73,15 @@ router.post('/orders', async (req, res) => {
     // Keep only the known fields, trimmed.
     shipping: Object.fromEntries(SHIPPING_FIELDS.map((f) => [f.name, shipping[f.name].trim()])),
   });
+  ordersCreated.add(1);
+  ordersRevenue.add(order.total);
   res.status(201).json(order);
 });
 
 router.post('/orders/:id/cancel', async (req, res) => {
-  res.json(await db.cancelOrder(await requireUser(req), req.params.id));
+  const order = await db.cancelOrder(await requireUser(req), req.params.id);
+  ordersCancelled.add(1);
+  res.json(order);
 });
 
 router.use((req, res) => res.status(404).json({ error: 'Not found' }));
@@ -86,7 +92,7 @@ router.use((err, req, res, next) => {
     return res.status(err.status).json({ error: err.message, details: err.details });
   }
   if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON' });
-  console.error(err);
+  logger.error('Unhandled error', { 'request.id': req.id, 'http.route': req.baseUrl + (req.route?.path ?? req.path), ...errAttrs(err) });
   res.status(500).json({ error: 'Something went wrong' });
 });
 
