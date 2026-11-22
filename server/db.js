@@ -5,6 +5,7 @@ import { Pool } from '@neondatabase/serverless';
 import { MAX_ACTIVE_ORDERS_PER_USER } from '../shared/config.js';
 import { orderTotals } from '../shared/pricing.js';
 import { HttpError } from './errors.js';
+import { logger, errAttrs } from './logger.js';
 import { CATEGORIES, PRODUCTS } from './seed.js';
 
 if (!process.env.DATABASE_URL) {
@@ -13,7 +14,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-pool.on('error', (err) => console.error('Database connection error:', err.message));
+pool.on('error', (err) => logger.error('Database connection error', errAttrs(err)));
 
 // Idempotent, so it is safe to run on every start. There is no migration tool: a change to an
 // existing table needs a manual ALTER (add it here too so fresh databases match).
@@ -95,7 +96,7 @@ export async function init() {
         [p.id, p.name, p.category, p.price, p.rating, p.stock, p.emoji, p.description],
       );
     }
-    console.log(`Seeded ${PRODUCTS.length} products`);
+    logger.info(`Seeded ${PRODUCTS.length} products`);
   });
 }
 

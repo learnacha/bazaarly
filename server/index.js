@@ -8,6 +8,10 @@ import { toNodeHandler } from 'better-auth/node';
 import apiRouter from './routes.js';
 import * as db from './db.js';
 import { auth, initAuth } from './auth.js';
+import { httpMetrics, shutdownTelemetry } from './telemetry.js';
+import { logger, errAttrs } from './logger.js';
+import { requestLogger } from './requestLogger.js';
+import { chaos } from './chaos.js';
 import { LABELS } from '../shared/config.js';
 
 const isProd = process.env.NODE_ENV === 'production' || process.argv.includes('--prod');
@@ -16,10 +20,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const app = express();
 app.disable('x-powered-by');
+app.use(httpMetrics);
+app.use(requestLogger);
 // Better Auth reads the raw request body itself, so it must be mounted BEFORE express.json().
 // Express 5 needs the named wildcard (*splat).
 app.all('/api/auth/*splat', toNodeHandler(auth));
-app.use('/api', express.json({ limit: '100kb' }), apiRouter);
+app.use('/api', chaos, express.json({ limit: '100kb' }), apiRouter);
 
 if (isProd) {
   const dist = path.join(ROOT, 'dist');
@@ -52,18 +58,19 @@ try {
   await db.init();
   await initAuth();
 } catch (err) {
-  console.error('Could not start (database or auth setup failed):', err.message);
+  logger.error('Could not start (database or auth setup failed)', errAttrs(err));
+  await shutdownTelemetry();
   process.exit(1);
 }
 
 const server = app.listen(PORT, () => {
-  console.log(`${LABELS.appName} (${isProd ? 'production' : 'development'}) running at http://localhost:${PORT}`);
+  logger.info(`${LABELS.appName} (${isProd ? 'production' : 'development'}) running at http://localhost:${PORT}`, { port: PORT });
 });
 
 // Close database connections cleanly when the platform stops the app.
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
     server.close();
-    db.close().finally(() => process.exit(0));
+    Promise.all([db.close(), shutdownTelemetry()]).finally(() => process.exit(0));
   });
 }

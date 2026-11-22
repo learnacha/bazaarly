@@ -1,0 +1,328 @@
+{
+ "__inputs": [
+  {
+   "name": "DS_LOKI",
+   "label": "Loki",
+   "type": "datasource",
+   "pluginId": "loki",
+   "pluginName": "Loki"
+  }
+ ],
+ "uid": "bazaarly-logs",
+ "title": "Bazaarly Logs",
+ "schemaVersion": 39,
+ "version": 1,
+ "refresh": "30s",
+ "time": {
+  "from": "now-1h",
+  "to": "now"
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "stat",
+   "title": "Requests logged",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "sum(count_over_time({service_name=\"bazaarly\"} |= \"request\" [$__range]))",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "Warnings (4xx)",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "sum(count_over_time({service_name=\"bazaarly\"} | detected_level=\"warn\" [$__range]))",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Errors (5xx / crashes)",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "sum(count_over_time({service_name=\"bazaarly\"} | detected_level=\"error\" [$__range]))",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "Slowest request (ms)",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 18,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "max(max_over_time({service_name=\"bazaarly\"} | duration_ms != \"\" | unwrap duration_ms [$__range]))",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "type": "timeseries",
+   "title": "Log volume by level",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 4,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "sum by (detected_level) (count_over_time({service_name=\"bazaarly\"} [$__interval]))",
+     "legendFormat": "{{detected_level}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "4xx/5xx responses by route",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 4,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "sum by (http_route, http_response_status_code) (count_over_time({service_name=\"bazaarly\"} | http_response_status_code >= 400 [$__interval]))",
+     "legendFormat": "{{http_route}} {{http_response_status_code}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "type": "logs",
+   "title": "Errors",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 12,
+    "w": 24,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "{service_name=\"bazaarly\"} | detected_level=\"error\"",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ],
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "enableLogDetails": true,
+    "sortOrder": "Descending"
+   }
+  },
+  {
+   "id": 8,
+   "type": "logs",
+   "title": "Slow requests (over 1s)",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 20,
+    "w": 24,
+    "h": 7
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "{service_name=\"bazaarly\"} | duration_ms > 1000",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ],
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "enableLogDetails": true,
+    "sortOrder": "Descending"
+   }
+  },
+  {
+   "id": 9,
+   "type": "logs",
+   "title": "All logs",
+   "datasource": {
+    "type": "loki",
+    "uid": "${DS_LOKI}"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 27,
+    "w": 24,
+    "h": 12
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "loki",
+      "uid": "${DS_LOKI}"
+     },
+     "expr": "{service_name=\"bazaarly\"}",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ],
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "enableLogDetails": true,
+    "sortOrder": "Descending"
+   }
+  }
+ ]
+}
